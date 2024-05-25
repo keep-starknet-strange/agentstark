@@ -1,4 +1,6 @@
 <div align="center">
+<img src="docs/imgs/skynet_logo.png" height="130" />
+
 <h1>
     Skynet
     <br>
@@ -10,5 +12,10 @@
 </h1>
 </div>
 
-Giza framework's [agents](https://agents.gizatech.xyz/) run provable ML models and act autonomously on [Starknet](https://www.starknet.io/en) using native [Account Abstraction](https://www.starknet.io/en/content/account-abstraction) .
+Skynet is an AI agent framework designed for [Starknet](https://www.starknet.io/en). It uses the [Account Abstraction](https://www.starknet.io/en/content/account-abstraction) and Giza's [AI Agents](https://docs.gizatech.xyz/products/ai-agents) to operate verifiable machine learning models and enable autonomous actions on Starknet.
+
+# How does it work?
+
+![skynet_diagram](docs/imgs/skynet_diagram.png)
+
 

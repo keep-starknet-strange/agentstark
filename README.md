@@ -1,6 +1,3 @@
-<div align="center">
-<img src="docs/imgs/skynet_logo.png" height="130" />
-
 <h1>
     Agent STARK
     <br>

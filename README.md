@@ -12,7 +12,7 @@
 </h1>
 </div>
 
-Skynet is an AI agent framework designed for [Starknet](https://www.starknet.io/en). It uses the [Account Abstraction](https://www.starknet.io/en/content/account-abstraction) and Giza's [AI Agents](https://docs.gizatech.xyz/products/ai-agents) to operate verifiable machine learning models and enable autonomous actions on Starknet.
+AgentSTARK is an AI agent framework designed for [Starknet](https://www.starknet.io/en). It uses the [Account Abstraction](https://www.starknet.io/en/content/account-abstraction) and will be used with Giza's [AI Agents](https://docs.gizatech.xyz/products/ai-agents) to operate verifiable machine learning models and enable autonomous actions on Starknet. 
 
 # How does it work?
 

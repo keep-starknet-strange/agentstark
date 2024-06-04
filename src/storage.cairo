@@ -23,7 +23,7 @@ mod SimpleStorage {
             self.stored_data.write(x);
         }
 
-        fn get(self: @ContractState) -> u128 {
+        fn view(self: @ContractState) -> u128 {
             self.stored_data.read()
         }
     }

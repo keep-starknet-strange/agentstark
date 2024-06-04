@@ -94,7 +94,7 @@ mod CamelAccountMock {
     use starknet::account::Call;
     use starknet::ContractAddress;
 
-    const transfer: felt252 = selector!("transfer");
+    const transfer: felt252 = selector!("view");
 
 
 
@@ -154,11 +154,9 @@ mod CamelAccountMock {
            
 
             // Execute
-            let ret = account.__execute__(call);
-
-
-           
-
+            let res = account.__execute__(call);
+            
+            assert!(res == 0);
 
             self.account.__validate__(calls)
         }

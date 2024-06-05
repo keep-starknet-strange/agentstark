@@ -93,8 +93,11 @@ mod CamelAccountMock {
     use openzeppelin::introspection::src5::SRC5Component;
     use starknet::account::Call;
     use starknet::ContractAddress;
+    use agentstark::utils::{execute_single_call, execute_calls};
 
-    const transfer: felt252 = selector!("view");
+    const view: felt252 = selector!("view");
+
+    
 
 
 
@@ -149,14 +152,19 @@ mod CamelAccountMock {
             let mut calldata = array![]; //no need for arguments for a view function
 
             let call = Call {
-                to: contractaddress, selector: transfer, calldata: calldata.span()
+                to: contractaddress, selector: view, calldata: calldata.span()
             };
            
 
-            // Execute
-            let res = account.__execute__(call);
+            let res = execute_single_call(call);
             
-            assert!(res == 0);
+            // Execute
+            //let res = account.__execute__(call);
+
+            let zero: Array<felt252> = array![0];
+            let zero_span :  Span<felt252> = zero.span();
+            
+            assert!(res == zero_span);
 
             self.account.__validate__(calls)
         }

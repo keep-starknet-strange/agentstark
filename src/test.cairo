@@ -7,8 +7,10 @@ use openzeppelin::account::interface::{ISRC6, ISRC6_ID};
 use openzeppelin::introspection::interface::{ISRC5, ISRC5_ID};
 
 
-use openzeppelin::tests::mocks::account_mocks::DualCaseAccountMock;
-use openzeppelin::tests::mocks::erc20_mocks::DualCaseERC20Mock;
+use agentstark::account_mock::DualCaseAccountMock;
+use agentstark::erc20_mock::DualCaseERC20Mock;
+//use openzeppelin::tests::mocks::account_mocks::DualCaseAccountMock;
+//use openzeppelin::tests::mocks::erc20_mocks::DualCaseERC20Mock;
 use openzeppelin::tests::utils::constants::{
     NAME, SYMBOL, PUBKEY, NEW_PUBKEY, SALT, ZERO, QUERY_OFFSET, QUERY_VERSION,
     MIN_TRANSACTION_VERSION
@@ -45,8 +47,13 @@ fn SIGNED_TX_DATA() -> SignedTransactionData {
 // Constants
 //
 
+
+use hash::Hash;
+
 fn CLASS_HASH() -> felt252 {
-    DualCaseAccountMock::TEST_CLASS_HASH
+    starknet_keccak(
+        module_ast.as_syntax_node().get_text_without_trivia(db).as_str().as_bytes(),
+    )
 }
 
 fn ACCOUNT_ADDRESS() -> ContractAddress {
@@ -122,7 +129,7 @@ fn test_is_valid_signature() {
     assert_eq!(is_valid, starknet::VALIDATED);
 
     let is_valid = state.is_valid_signature(hash, bad_signature);
-    assert!(is_valid.is_zero(), "Should reject invalid signature");
+    assert!(is_valid == 0, "Should reject invalid signature");
 }
 
 #[test]
@@ -140,7 +147,7 @@ fn test_isValidSignature() {
     assert_eq!(is_valid, starknet::VALIDATED);
 
     let is_valid = state.isValidSignature(hash, bad_signature);
-    assert!(is_valid.is_zero(), "Should reject invalid signature");
+    assert!(is_valid == 0, "Should reject invalid signature");
 }
 
 //
@@ -402,7 +409,7 @@ fn test_public_key_setter_and_getter() {
 
     // Check default
     let public_key = state.get_public_key();
-    assert!(public_key.is_zero());
+    assert!(public_key == 0);
 
     // Set key
     state.set_public_key(NEW_PUBKEY);
@@ -437,7 +444,7 @@ fn test_public_key_setter_and_getter_camel() {
 
     // Check default
     let public_key = state.getPublicKey();
-    assert!(public_key.is_zero());
+    assert!(public_key == 0);
 
     // Set key
     state.setPublicKey(NEW_PUBKEY);

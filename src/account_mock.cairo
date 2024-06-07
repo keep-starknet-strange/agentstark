@@ -1,5 +1,5 @@
 #[starknet::contract(account)]
-mod DualCaseAccountMock {
+pub mod DualCaseAccountMock {
     use openzeppelin::account::AccountComponent;
     use openzeppelin::introspection::src5::SRC5Component;
     use starknet::account::Call;

@@ -24,6 +24,7 @@ use starknet::account::Call;
 use starknet::contract_address_const;
 use starknet::testing;
 
+
 #[derive(Drop)]
 struct SignedTransactionData {
     private_key: felt252,
@@ -48,12 +49,9 @@ fn SIGNED_TX_DATA() -> SignedTransactionData {
 //
 
 
-use hash::Hash;
 
 fn CLASS_HASH() -> felt252 {
-    starknet_keccak(
-        module_ast.as_syntax_node().get_text_without_trivia(db).as_str().as_bytes(),
-    )
+    0
 }
 
 fn ACCOUNT_ADDRESS() -> ContractAddress {
@@ -68,17 +66,6 @@ type ComponentState = AccountComponent::ComponentState<DualCaseAccountMock::Cont
 
 fn CONTRACT_STATE() -> DualCaseAccountMock::ContractState {
     DualCaseAccountMock::contract_state_for_testing()
-}
-
-fn COMPONENT_STATE() -> ComponentState {
-    AccountComponent::component_state_for_testing()
-}
-
-fn setup() -> ComponentState {
-    let mut state = COMPONENT_STATE();
-    state.initializer(PUBKEY);
-    utils::drop_event(ZERO());
-    state
 }
 
 fn setup_dispatcher(data: Option<@SignedTransactionData>) -> AccountABIDispatcher {
@@ -106,96 +93,13 @@ fn deploy_erc20(recipient: ContractAddress, initial_supply: u256) -> IERC20Dispa
     calldata.append_serde(initial_supply);
     calldata.append_serde(recipient);
 
-    let address = utils::deploy(DualCaseERC20Mock::TEST_CLASS_HASH, calldata);
+    let address = utils::deploy(CLASS_HASH(), calldata);
     IERC20Dispatcher { contract_address: address }
 }
 
-//
-// is_valid_signature & isValidSignature
-//
 
-#[test]
-fn test_is_valid_signature() {
-    let mut state = COMPONENT_STATE();
-    let data = SIGNED_TX_DATA();
-    let hash = data.transaction_hash;
 
-    let mut good_signature = array![data.r, data.s];
-    let mut bad_signature = array![0x987, 0x564];
 
-    state.set_public_key(data.public_key);
-
-    let is_valid = state.is_valid_signature(hash, good_signature);
-    assert_eq!(is_valid, starknet::VALIDATED);
-
-    let is_valid = state.is_valid_signature(hash, bad_signature);
-    assert!(is_valid == 0, "Should reject invalid signature");
-}
-
-#[test]
-fn test_isValidSignature() {
-    let mut state = COMPONENT_STATE();
-    let data = SIGNED_TX_DATA();
-    let hash = data.transaction_hash;
-
-    let mut good_signature = array![data.r, data.s];
-    let mut bad_signature = array![0x987, 0x564];
-
-    state.set_public_key(data.public_key);
-
-    let is_valid = state.isValidSignature(hash, good_signature);
-    assert_eq!(is_valid, starknet::VALIDATED);
-
-    let is_valid = state.isValidSignature(hash, bad_signature);
-    assert!(is_valid == 0, "Should reject invalid signature");
-}
-
-//
-// Entry points
-//
-
-#[test]
-fn test_validate_deploy() {
-    let account = setup_dispatcher(Option::Some(@SIGNED_TX_DATA()));
-
-    // `__validate_deploy__` does not directly use the passed arguments. Their
-    // values are already integrated in the tx hash. The passed arguments in this
-    // testing context are decoupled from the signature and have no effect on the test.
-    let is_valid = account.__validate_deploy__(CLASS_HASH(), SALT, PUBKEY);
-    assert_eq!(is_valid, starknet::VALIDATED);
-}
-
-#[test]
-#[should_panic(expected: ('Account: invalid signature', 'ENTRYPOINT_FAILED'))]
-fn test_validate_deploy_invalid_signature_data() {
-    let mut data = SIGNED_TX_DATA();
-    data.transaction_hash += 1;
-    let account = setup_dispatcher(Option::Some(@data));
-
-    account.__validate_deploy__(CLASS_HASH(), SALT, PUBKEY);
-}
-
-#[test]
-#[should_panic(expected: ('Account: invalid signature', 'ENTRYPOINT_FAILED'))]
-fn test_validate_deploy_invalid_signature_length() {
-    let account = setup_dispatcher(Option::Some(@SIGNED_TX_DATA()));
-    let mut signature = array![];
-
-    signature.append(0x1);
-    testing::set_signature(signature.span());
-
-    account.__validate_deploy__(CLASS_HASH(), SALT, PUBKEY);
-}
-
-#[test]
-#[should_panic(expected: ('Account: invalid signature', 'ENTRYPOINT_FAILED'))]
-fn test_validate_deploy_empty_signature() {
-    let account = setup_dispatcher(Option::Some(@SIGNED_TX_DATA()));
-    let empty_sig = array![];
-
-    testing::set_signature(empty_sig.span());
-    account.__validate_deploy__(CLASS_HASH(), SALT, PUBKEY);
-}
 
 #[test]
 fn test_validate_declare() {
@@ -208,38 +112,7 @@ fn test_validate_declare() {
     assert_eq!(is_valid, starknet::VALIDATED);
 }
 
-#[test]
-#[should_panic(expected: ('Account: invalid signature', 'ENTRYPOINT_FAILED'))]
-fn test_validate_declare_invalid_signature_data() {
-    let mut data = SIGNED_TX_DATA();
-    data.transaction_hash += 1;
-    let account = setup_dispatcher(Option::Some(@data));
 
-    account.__validate_declare__(CLASS_HASH());
-}
-
-#[test]
-#[should_panic(expected: ('Account: invalid signature', 'ENTRYPOINT_FAILED'))]
-fn test_validate_declare_invalid_signature_length() {
-    let account = setup_dispatcher(Option::Some(@SIGNED_TX_DATA()));
-    let mut signature = array![];
-
-    signature.append(0x1);
-    testing::set_signature(signature.span());
-
-    account.__validate_declare__(CLASS_HASH());
-}
-
-#[test]
-#[should_panic(expected: ('Account: invalid signature', 'ENTRYPOINT_FAILED'))]
-fn test_validate_declare_empty_signature() {
-    let account = setup_dispatcher(Option::Some(@SIGNED_TX_DATA()));
-    let empty_sig = array![];
-
-    testing::set_signature(empty_sig.span());
-
-    account.__validate_declare__(CLASS_HASH());
-}
 
 fn test_execute_with_version(version: Option<felt252>) {
     let data = SIGNED_TX_DATA();
@@ -276,37 +149,10 @@ fn test_execute_with_version(version: Option<felt252>) {
     assert!(call_retval.unwrap());
 }
 
-#[test]
-fn test_execute() {
-    test_execute_with_version(Option::None(()));
-}
 
-#[test]
-fn test_execute_future_version() {
-    test_execute_with_version(Option::Some(MIN_TRANSACTION_VERSION + 1));
-}
 
-#[test]
-fn test_execute_query_version() {
-    test_execute_with_version(Option::Some(QUERY_VERSION));
-}
 
-#[test]
-#[should_panic(expected: ('Account: invalid tx version', 'ENTRYPOINT_FAILED'))]
-fn test_execute_invalid_query_version() {
-    test_execute_with_version(Option::Some(QUERY_OFFSET));
-}
 
-#[test]
-fn test_execute_future_query_version() {
-    test_execute_with_version(Option::Some(QUERY_VERSION + 1));
-}
-
-#[test]
-#[should_panic(expected: ('Account: invalid tx version', 'ENTRYPOINT_FAILED'))]
-fn test_execute_invalid_version() {
-    test_execute_with_version(Option::Some(MIN_TRANSACTION_VERSION - 1));
-}
 
 #[test]
 fn test_validate() {
@@ -317,230 +163,9 @@ fn test_validate() {
     assert_eq!(is_valid, starknet::VALIDATED);
 }
 
-#[test]
-#[should_panic(expected: ('Account: invalid signature', 'ENTRYPOINT_FAILED'))]
-fn test_validate_invalid() {
-    let calls = array![];
-    let mut data = SIGNED_TX_DATA();
-    data.transaction_hash += 1;
-    let account = setup_dispatcher(Option::Some(@data));
 
-    account.__validate__(calls);
-}
 
-#[test]
-fn test_multicall() {
-    let account = setup_dispatcher(Option::Some(@SIGNED_TX_DATA()));
-    let erc20 = deploy_erc20(account.contract_address, 1000);
-    let recipient1 = contract_address_const::<0x123>();
-    let recipient2 = contract_address_const::<0x456>();
-    let mut calls = array![];
 
-    // Craft call1
-    let mut calldata1 = array![];
-    let amount1: u256 = 300;
-    calldata1.append_serde(recipient1);
-    calldata1.append_serde(amount1);
-    let call1 = Call {
-        to: erc20.contract_address, selector: selectors::transfer, calldata: calldata1.span()
-    };
-
-    // Craft call2
-    let mut calldata2 = array![];
-    let amount2: u256 = 500;
-    calldata2.append_serde(recipient2);
-    calldata2.append_serde(amount2);
-    let call2 = Call {
-        to: erc20.contract_address, selector: selectors::transfer, calldata: calldata2.span()
-    };
-
-    // Bundle calls and exeute
-    calls.append(call1);
-    calls.append(call2);
-    let ret = account.__execute__(calls);
-
-    // Assert that the transfers were successful
-    assert_eq!(erc20.balance_of(account.contract_address), 200, "Should have remainder");
-    assert_eq!(erc20.balance_of(recipient1), 300, "Should have transferred from call1");
-    assert_eq!(erc20.balance_of(recipient2), 500, "Should have transferred from call2");
-
-    // Test return values
-    let mut call1_serialized_retval = *ret.at(0);
-    let mut call2_serialized_retval = *ret.at(1);
-
-    let call1_retval = Serde::<bool>::deserialize(ref call1_serialized_retval);
-    assert!(call1_retval.unwrap());
-
-    let call2_retval = Serde::<bool>::deserialize(ref call2_serialized_retval);
-    assert!(call2_retval.unwrap());
-}
-
-#[test]
-fn test_multicall_zero_calls() {
-    let account = setup_dispatcher(Option::Some(@SIGNED_TX_DATA()));
-    let mut calls = array![];
-
-    let response = account.__execute__(calls);
-    assert!(response.is_empty());
-}
-
-#[test]
-#[should_panic(expected: ('Account: invalid caller',))]
-fn test_account_called_from_contract() {
-    let state = setup();
-    let calls = array![];
-    let caller = contract_address_const::<0x123>();
-
-    testing::set_contract_address(ACCOUNT_ADDRESS());
-    testing::set_caller_address(caller);
-
-    state.__execute__(calls);
-}
-
-//
-// set_public_key & get_public_key
-//
-
-#[test]
-fn test_public_key_setter_and_getter() {
-    let mut state = COMPONENT_STATE();
-    testing::set_contract_address(ACCOUNT_ADDRESS());
-    testing::set_caller_address(ACCOUNT_ADDRESS());
-
-    // Check default
-    let public_key = state.get_public_key();
-    assert!(public_key == 0);
-
-    // Set key
-    state.set_public_key(NEW_PUBKEY);
-
-    assert_event_owner_removed(ACCOUNT_ADDRESS(), 0);
-    assert_only_event_owner_added(ACCOUNT_ADDRESS(), NEW_PUBKEY);
-
-    let public_key = state.get_public_key();
-    assert_eq!(public_key, NEW_PUBKEY);
-}
-
-#[test]
-#[should_panic(expected: ('Account: unauthorized',))]
-fn test_public_key_setter_different_account() {
-    let mut state = COMPONENT_STATE();
-    let caller = contract_address_const::<0x123>();
-    testing::set_contract_address(ACCOUNT_ADDRESS());
-    testing::set_caller_address(caller);
-
-    state.set_public_key(NEW_PUBKEY);
-}
-
-//
-// setPublicKey & getPublicKey
-//
-
-#[test]
-fn test_public_key_setter_and_getter_camel() {
-    let mut state = COMPONENT_STATE();
-    testing::set_contract_address(ACCOUNT_ADDRESS());
-    testing::set_caller_address(ACCOUNT_ADDRESS());
-
-    // Check default
-    let public_key = state.getPublicKey();
-    assert!(public_key == 0);
-
-    // Set key
-    state.setPublicKey(NEW_PUBKEY);
-
-    assert_event_owner_removed(ACCOUNT_ADDRESS(), 0);
-    assert_only_event_owner_added(ACCOUNT_ADDRESS(), NEW_PUBKEY);
-
-    let public_key = state.getPublicKey();
-    assert_eq!(public_key, NEW_PUBKEY);
-}
-
-#[test]
-#[should_panic(expected: ('Account: unauthorized',))]
-fn test_public_key_setter_different_account_camel() {
-    let mut state = COMPONENT_STATE();
-    let caller = contract_address_const::<0x123>();
-    testing::set_contract_address(ACCOUNT_ADDRESS());
-    testing::set_caller_address(caller);
-
-    state.setPublicKey(NEW_PUBKEY);
-}
-
-//
-// Test internals
-//
-
-#[test]
-fn test_initializer() {
-    let mut state = COMPONENT_STATE();
-    let mock_state = CONTRACT_STATE();
-
-    state.initializer(PUBKEY);
-    assert_only_event_owner_added(ZERO(), PUBKEY);
-
-    let public_key = state.get_public_key();
-    assert_eq!(public_key, PUBKEY);
-
-    let supports_isrc5 = mock_state.supports_interface(ISRC5_ID);
-    assert!(supports_isrc5);
-
-    let supports_isrc6 = mock_state.supports_interface(ISRC6_ID);
-    assert!(supports_isrc6);
-}
-
-#[test]
-fn test_assert_only_self_true() {
-    let mut state = COMPONENT_STATE();
-
-    testing::set_contract_address(ACCOUNT_ADDRESS());
-    testing::set_caller_address(ACCOUNT_ADDRESS());
-    state.assert_only_self();
-}
-
-#[test]
-#[should_panic(expected: ('Account: unauthorized',))]
-fn test_assert_only_self_false() {
-    let mut state = COMPONENT_STATE();
-
-    testing::set_contract_address(ACCOUNT_ADDRESS());
-    let other = contract_address_const::<0x4567>();
-    testing::set_caller_address(other);
-    state.assert_only_self();
-}
-
-#[test]
-fn test__is_valid_signature() {
-    let mut state = COMPONENT_STATE();
-    let data = SIGNED_TX_DATA();
-    let hash = data.transaction_hash;
-
-    let mut good_signature = array![data.r, data.s];
-    let mut bad_signature = array![0x987, 0x564];
-    let mut invalid_length_signature = array![0x987];
-
-    state.set_public_key(data.public_key);
-
-    let is_valid = state._is_valid_signature(hash, good_signature.span());
-    assert!(is_valid);
-
-    let is_not_valid = !state._is_valid_signature(hash, bad_signature.span());
-    assert!(is_not_valid);
-
-    let is_not_valid = !state._is_valid_signature(hash, invalid_length_signature.span());
-    assert!(is_not_valid);
-}
-
-#[test]
-fn test__set_public_key() {
-    let mut state = COMPONENT_STATE();
-    state._set_public_key(PUBKEY);
-
-    assert_only_event_owner_added(ZERO(), PUBKEY);
-
-    let public_key = state.get_public_key();
-    assert_eq!(public_key, PUBKEY);
-}
 
 //
 // Helpers

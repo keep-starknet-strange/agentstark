@@ -16,3 +16,33 @@ AgentSTARK is an AI agent framework designed for [Starknet](https://www.starknet
 ![skynet_diagram](docs/imgs/skynet_diagram.png)
 
 
+### Build the contract
+
+Use `scarb build` to build the contract. You will need both the `sierra` and `casm` files to
+declare and deploy the account contract. 
+
+### Deploy and fund your account 
+
+The Starknet JS deployment script [TODO] will return the transaction hash and the contract address. Send some Sepolia ETH to the account, the easiest way is to send it from any Argent 
+or Braavos wallet. You will need that address to add the account to `sncast`. 
+
+### Add your account to sncast
+
+`sncast --url "https://rpc.nethermind.io/sepolia-juno/?apikey=YOUR_API_KEY" account add --name agent --address your_contract_address --type oz --private-key 0x111111111111`
+
+### Calling the verifier 
+
+`cd scripts`
+
+Run the bash script with the verifier address and the calldata file generated from the 
+[Integrity repo](https://github.com/HerodotusDev/integrity/tree/main?tab=readme-ov-file#starknet-proof-verification). 
+`./1-verify-proof.sh 0x274d8165a19590bdeaa94d1dd427e2034462d7611754ab3e15714a908c60df7 calldata`
+
+Once the transaction is processed, the emitted event `FactRegistered()` returns the hash of the
+fact. Plug it into the the first call of the `multicall.toml` file to ensure checking the valid fact. Add the other calls the agent needs to execute `multicall.toml`.
+
+TODO: connect the emitted event with the fact validity check. 
+
+Run `./2-check-fact-and-execute-calls.sh`
+
+

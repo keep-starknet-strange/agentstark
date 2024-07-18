@@ -1,0 +1,11 @@
+[[call]]
+call_type = "invoke"
+contract_address = "0x274d8165a19590bdeaa94d1dd427e2034462d7611754ab3e15714a908c60df7"
+function = "is_valid"
+inputs = ["your_fact_hash"]
+
+[[call]]
+call_type = "invoke"
+contract_address = "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7"
+function = "total_supply"
+inputs = []
